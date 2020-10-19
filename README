@@ -1,0 +1,125 @@
+README 3/3/91
+
+What it is:
+  This distribution contains the files README, interface.c, interface.h,
+  and sample.c. The files interface.c and interface.h contain definitions
+  and declarations for some generic Internet-interfacing code. The best
+  form of documentation is by example, in my opinion, so I included
+  sample.c, which is a simple echo-mud that supports WHO, QUIT, and @shutdown
+  as commands. Read it over a few times to get the gist of how to use
+  the interface package.
+
+  Here's some sample pseudocode sorta stuff, demonstrating the general
+  procedure your program should follow:
+
+    init_port(My Port Number, My Maximum Buffer Size);
+    Do Our Own Start Up Stuff;
+    while (We Still Want To Run) {
+      Connection=get_event();
+      switch (conn_status(Connection)) {
+      case INPUT_RECEIVED:
+        Handle the Input, using read_conn();
+        break;
+      case NEW_CONNECTION:
+        Do Whatever Stuff We Need To Do With A New Connection;
+        break;
+      case CONNECTION_DEAD:
+        Do Our Own Clean Up;
+        shutdown_conn(Connection);
+        break;
+      }
+    }
+    Do Some More Of Our Own Clean Up;
+    shutdown_port();
+
+
+
+Configuring interface.c and interface.h:
+  The following three values are #define'd in interface.h:
+
+  MAX_CONNS         58    Maximum number of connections we'll take at a time
+  MAX_INBUF         96    Maximum number of input lines to buffer
+  MAX_LINE_PER_SEC  10    Maximum number of lines per second we'll receive
+                          before the connection gets closed by the anti-
+                          spammer (unless the connection has been marked
+                          SPAM_OK with connctl())
+
+
+Functions Declared In interface.h:
+
+int init_port(int portno, int bufsiz);
+  This connects a socket to portno, and configures it to receives a maximum
+  string length of bufsiz-1. Returns 0 on failure.
+
+void shutdown_port(void);
+  This closes the port and its associated connections, and does some
+  routine clean-up. Should be done before the program exits.
+
+void shutdown_conn(CONN cd);
+  This closes the connection and empties the input buffer.
+
+int write_conn(CONN cd, char *msg);
+  This writes the string msg to the specified connection. It returns -1
+  on error.
+
+char *read_conn(CONN cd);
+  This returns the next string in the input queue of the connection. It
+  returns NULL if the connection has no input queued.
+
+CONN get_event(void);
+  This waits for some activity on one of the open connections, and will
+  return the connection for which the activity has occurred. The program
+  calling get_event() should call conn_status() on the connection to
+  determine the nature of the event.
+
+int connctl(CONN cd, int oper, int data);
+  This sets certain modes of the connection. Currently, the only
+  operations permitted are:
+    CONN_SET_FLAGS           This sets the flags on the connection.
+                             The only flag supported currently is
+                             SPAM_OK, which turns off the anti-spammer
+                             for that connection when the flag is set.
+    CONN_GET_FLAGS           Returns the flags set on the connection.
+                             Data can be anything.
+  connctl() returns -1 on error.
+
+int conn_status(CONN cd);
+  This returns the status of the connection. This will be one of the
+  following:
+    INPUT_RECEIVED           There is input queued on this connection.
+                             Use read_conn() to retrieve it.
+    NEW_CONNECTION           This is a new connection that has just been
+                             formed.
+    CONNECTION_DEAD          The connection has died on the client's end,
+                             or the anti-spammer code has detected spamming.
+                             The program should shutdown_conn() on this
+                             connection.
+
+CONN get_conn(int refno);
+  This takes a number from 0 to MAX_CONNS-1 and indexes into the connection
+  table. It will return a CONN if the connection is open, or NULL if the
+  connection is closed or if the refno is out of bounds.
+
+struct sockaddr_in get_inet_addr(CONN cd);
+  This function returns the address of the connection.
+
+int get_fd(CONN cd);
+  This function returns the file descriptor associated with the connection.
+
+
+
+
+
+interface.c and interface.h are 100% public domain. Do whatever the hell
+you want with them.
+
+DISCLAIMER: The author accepts no responsibility or liability for anything
+  this code may do when compiled or run. Cope.
+
+NOTE: The author doesn't care whether you think the code is pretty or not.
+      The author doesn't believe in commenting.
+      If there's a bug, email me about it. If you just want to whine about
+      how gross it is, don't.
+
+The author is:       Patrick J Wetmore
+                     floyd@rpi.edu

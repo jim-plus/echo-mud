@@ -1,0 +1,18 @@
+CHANGES 4/29/91:
+
+Calls to shutdown() now include the second argument, a 2.
+A useless call to fcntl() was removed.
+The call to accept() in make_new_conn was changed so that the 3rd
+parameter passed contains a pointer to the size of the structure,
+not a 0.
+
+In sample.c: (of little importance)
+A lot of people couldn't compile it because they had non-backward-
+compatible /usr/include/inet/in.h's. I changed the address-printing
+bit of code for the WHO command to a call to inet_ntoa
+
+None of the above should change your code even a little bit. Just re-compile
+with the new interface.c.
+
+Patrick J. Wetmore
+floyd@rpi.edu
